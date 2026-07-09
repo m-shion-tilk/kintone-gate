@@ -221,7 +221,7 @@
         try {
           // Vercelの中継API（search.js）を呼び出し
           const response = await fetch(
-            `/api/search?caseNo=${encodeURIComponent(caseNo)}`,
+            `https://kintone-search.m-takeuchi-880.workers.dev/?caseNo=${encodeURIComponent(caseNo)}`,
           );
           const data = await response.json();
 
@@ -266,7 +266,7 @@
             // 退館モードの処理
             document.getElementById("tyosaStaff").value = existStaff; // 入館時の担当者を自動引き継ぎ
             if (existExitTime) {
-              // 既にデータあり：作業員にあれ？と思わせる
+              // 既にデータあり：
               document.getElementById("targetDateTime").value =
                 existExitTime.slice(0, 16);
               alertEl.textContent = `⚠️ 注意：既に退館時間が登録されています。`;
@@ -296,16 +296,19 @@
         const targetDateTime = document.getElementById("targetDateTime").value;
 
         try {
-          const response = await fetch("/api/update", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              recordId,
-              mode,
-              tyosaStaff,
-              targetDateTime,
-            }),
-          });
+          const response = await fetch(
+            "https://kintone-update.m-takeuchi-880.workers.dev/",
+            {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                recordId,
+                mode,
+                tyosaStaff,
+                targetDateTime,
+              }),
+            },
+          );
 
           const result = await response.json();
 
