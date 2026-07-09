@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>入退館管理システム</title>
+    <style>
+      body {
+        font-family: "Helvetica Neue", Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f5f7fa;
+        color: #333;
+      }
+      .container {
+        max-width: 500px;
+        margin: 0 auto;
+        background: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      h2 {
+        font-size: 18px;
+        margin-bottom: 20px;
+        color: #2c3e50;
+        text-align: center;
+        border-bottom: 2px solid #3498db;
+        padding-bottom: 10px;
+      }
+      .form-group {
+        margin-bottom: 20px;
+      }
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: bold;
+        font-size: 14px;
+      }
+      input[type="text"],
+      input[type="datetime-local"] {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 16px;
+      }
+      .btn-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+      }
+      .btn {
+        flex: 1;
+        padding: 14px;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .btn-blue {
+        background: #3498db;
+      }
+      .btn-blue:hover {
+        background: #2980b9;
+      }
+      .btn-orange {
+        background: #e67e22;
+      }
+      .btn-orange:hover {
+        background: #d35400;
+      }
+      .btn-submit {
+        width: 100%;
+        background: #2ecc71;
+        margin-top: 20px;
+      }
+      .btn-submit:hover {
+        background: #27ae60;
+      }
+      .card {
+        background: #edf2f7;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        font-size: 15px;
+        border-left: 5px solid #3498db;
+      }
+      .card p {
+        margin: 8px 0;
+      }
+      .error {
+        color: #e74c3c;
+        font-weight: bold;
+        text-align: center;
+        margin-top: 15px;
+        font-size: 15px;
+        background: #fadbd8;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .success {
+        color: #27ae60;
+        font-weight: bold;
+        text-align: center;
+        margin-top: 15px;
+        font-size: 15px;
+        background: #d4efdf;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .alert-exists {
+        color: #d35400;
+        font-weight: bold;
+        background: #fdebd0;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        text-align: center;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>入退館 案件検索</h2>
+      <div class="form-group">
+        <label>案件管理番号</label>
+        <input type="text" id="caseNo" placeholder="例: CASE-0001" />
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-blue" onclick="searchAndPrepare('入館')">
+          入館する
+        </button>
+        <button class="btn btn-orange" onclick="searchAndPrepare('退館')">
+          退館する
+        </button>
+      </div>
+
+      <div id="message"></div>
+
+      <form
+        id="updateForm"
+        onsubmit="updateRecord(event)"
+        style="display: none; margin-top: 25px"
+      >
+        <h2 id="formTitle">入館 登録</h2>
+        <input type="hidden" id="recordId" />
+        <input type="hidden" id="currentMode" />
+        <div class="card">
+          <p><strong>案件名:</strong> <span id="viewCaseName"></span></p>
+          <p><strong>住所:</strong> <span id="viewAddress"></span></p>
+        </div>
+
+        <div
+          id="alreadyExistsAlert"
+          class="alert-exists"
+          style="display: none"
+        ></div>
+
+        <div class="form-group">
+          <label>調査担当者</label>
+          <input
+            type="text"
+            id="tyosaStaff"
+            required
+            placeholder="お名前を入力してください"
+          />
+        </div>
+
+        <div class="form-group">
+          <label id="dateLabel">調査入館時間</label>
+          <input type="datetime-local" id="targetDateTime" required />
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn btn-submit">
+          この内容で登録する
+        </button>
+      </form>
+    </div>
+
+    <script>
+      const msgEl = document.getElementById("message");
+      const formEl = document.getElementById("updateForm");
+
+      // 現在時刻をローカルタイム形式で取得
+      function getNowDateTimeString() {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        return now.toISOString().slice(0, 16);
+      }
+
+      // 検索＆フォーム準備
+      async function searchAndPrepare(mode) {
+        const caseNo = document.getElementById("caseNo").value.trim();
+        if (!caseNo) return alert("案件番号を入力してください");
+
+        msgEl.textContent = "";
+        msgEl.className = "";
+        formEl.style.display = "none";
+        document.getElementById("alreadyExistsAlert").style.display = "none";
+
+        // モードの保存と画面表示の切り替え
+        document.getElementById("currentMode").value = mode;
+        document.getElementById("formTitle").textContent =
+          `【${mode}】登録フォーム`;
+        document.getElementById("dateLabel").textContent =
+          mode === "入館" ? "調査入館時間" : "調査退館時間";
+
+        if (mode === "入館") {
+          document.getElementById("submitBtn").style.background = "#2ecc71";
+        } else {
+          document.getElementById("submitBtn").style.background = "#e67e22";
+        }
+
+        try {
+          // Vercelの中継API（search.js）を呼び出し
+          const response = await fetch(
+            `/api/search?caseNo=${encodeURIComponent(caseNo)}`,
+          );
+          const data = await response.json();
+
+          if (!data.records || data.records.length === 0) {
+            msgEl.className = "error";
+            msgEl.textContent =
+              "該当する案件が見つかりません。番号を確かめてください。";
+            return;
+          }
+
+          const record = data.records[0];
+
+          // kintoneのフィールドコードから案件名と住所を表示（誤登録防止！）
+          document.getElementById("recordId").value = record.$id.value;
+          document.getElementById("viewCaseName").textContent =
+            record.case_name?.value || "未設定";
+          document.getElementById("viewAddress").textContent =
+            record.address?.value || "未設定";
+
+          // 既存データの取得
+          const existStaff = record.tyosa_staff?.value || "";
+          const existEntryTime = record.tyosa_entry_datetime?.value || "";
+          const existExitTime = record.tyosa_exit_datetime?.value || "";
+
+          const alertEl = document.getElementById("alreadyExistsAlert");
+
+          if (mode === "入館") {
+            // 入館モードの処理
+            document.getElementById("tyosaStaff").value = existStaff;
+            if (existEntryTime) {
+              // 既にデータあり：作業員にあれ？と思わせる
+              document.getElementById("targetDateTime").value =
+                existEntryTime.slice(0, 16);
+              alertEl.textContent = `⚠️ 注意：既に入館時間が登録されています（担当: ${existStaff}）`;
+              alertEl.style.display = "block";
+            } else {
+              // 初回
+              document.getElementById("targetDateTime").value =
+                getNowDateTimeString();
+            }
+          } else {
+            // 退館モードの処理
+            document.getElementById("tyosaStaff").value = existStaff; // 入館時の担当者を自動引き継ぎ
+            if (existExitTime) {
+              // 既にデータあり：作業員にあれ？と思わせる
+              document.getElementById("targetDateTime").value =
+                existExitTime.slice(0, 16);
+              alertEl.textContent = `⚠️ 注意：既に退館時間が登録されています。`;
+              alertEl.style.display = "block";
+            } else {
+              // 初回退館
+              document.getElementById("targetDateTime").value =
+                getNowDateTimeString();
+            }
+          }
+
+          formEl.style.display = "block";
+        } catch (error) {
+          console.error(error);
+          msgEl.className = "error";
+          msgEl.textContent = "通信エラーが発生しました。";
+        }
+      }
+
+      // レコード更新処理
+      async function updateRecord(event) {
+        event.preventDefault();
+
+        const recordId = document.getElementById("recordId").value;
+        const mode = document.getElementById("currentMode").value;
+        const tyosaStaff = document.getElementById("tyosaStaff").value;
+        const targetDateTime = document.getElementById("targetDateTime").value;
+
+        try {
+          const response = await fetch("/api/update", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              recordId,
+              mode,
+              tyosaStaff,
+              targetDateTime,
+            }),
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            msgEl.className = "success";
+            msgEl.textContent = `${mode}情報を正常に登録しました！`;
+            formEl.style.display = "none";
+            document.getElementById("caseNo").value = "";
+          } else {
+            msgEl.className = "error";
+            msgEl.textContent = `登録失敗: ${result.message}`;
+          }
+        } catch (error) {
+          console.error(error);
+          msgEl.className = "error";
+          msgEl.textContent = "送信中に通信エラーが発生しました。";
+        }
+      }
+    </script>
+  </body>
+</html>
