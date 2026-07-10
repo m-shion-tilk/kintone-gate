@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>入退館管理システム</title>
+    <title>楽天ダーク入退館管理システム</title>
     <style>
       body {
         font-family: "Helvetica Neue", Arial, sans-serif;
@@ -198,8 +198,10 @@
       // 検索＆フォーム準備
       async function searchAndPrepare(mode) {
         const caseNo = document.getElementById("caseNo").value.trim();
-        if (!caseNo) return alert("案件番号を入力してください");
-
+        //if (!caseNo) return alert("10桁の案件番号を入力してください");
+        // alert() の代わりに、画面の特定のエレメントに文字を入れる
+        document.getElementById("error-message").innerText =
+          "10桁の案件番号を入力してください";
         msgEl.textContent = "";
         msgEl.className = "";
         formEl.style.display = "none";
@@ -255,7 +257,7 @@
               // 既にデータあり：作業員にあれ？と思わせる
               document.getElementById("targetDateTime").value =
                 existEntryTime.slice(0, 16);
-              alertEl.textContent = `⚠️ 注意：既に入館時間が登録されています（担当: ${existStaff}）`;
+              alertEl.textContent = `注意：既に入館時間が登録されています（担当: ${existStaff}）`;
               alertEl.style.display = "block";
             } else {
               // 初回
@@ -269,7 +271,7 @@
               // 既にデータあり：
               document.getElementById("targetDateTime").value =
                 existExitTime.slice(0, 16);
-              alertEl.textContent = `⚠️ 注意：既に退館時間が登録されています。`;
+              alertEl.textContent = `注意：既に退館時間が登録されています。（担当: ${existStaff}）`;
               alertEl.style.display = "block";
             } else {
               // 初回退館
