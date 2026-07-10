@@ -130,7 +130,7 @@
       <h2>入退館 案件検索</h2>
       <div class="form-group">
         <label>案件管理番号</label>
-        <input type="text" id="caseNo" placeholder="例: CASE-0001" />
+        <input type="text" id="caseNo" placeholder="例: 122601001" />
       </div>
 
       <div class="btn-group">
@@ -219,7 +219,7 @@
         }
 
         try {
-          // Vercelの中継API（search.js）を呼び出し
+          // 中継API（search.js）を呼び出し
           const response = await fetch(
             `https://kintone-search.m-takeuchi-880.workers.dev/?caseNo=${encodeURIComponent(caseNo)}`,
           );
