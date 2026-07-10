@@ -132,7 +132,7 @@
         <label>案件管理番号</label>
         <input type="text" id="caseNo" placeholder="例: 122601001" />
       </div>
-
+      <p id="error-message" style="color: red; font-weight: bold"></p>
       <div class="btn-group">
         <button class="btn btn-blue" onclick="searchAndPrepare('入館')">
           入館する
@@ -200,8 +200,14 @@
         const caseNo = document.getElementById("caseNo").value.trim();
         //if (!caseNo) return alert("10桁の案件番号を入力してください");
         // alert() の代わりに、画面の特定のエレメントに文字を入れる
-        document.getElementById("error-message").innerText =
-          "10桁の案件番号を入力してください";
+        if (!caseNo) {
+          document.getElementById("error-message").innerText =
+            "10桁の案件番号を入力してください";
+          return;
+        }
+        // ちゃんと入力されていたら、古いエラーメッセージを消して次に進む
+        document.getElementById("error-message").innerText = "";
+
         msgEl.textContent = "";
         msgEl.className = "";
         formEl.style.display = "none";
